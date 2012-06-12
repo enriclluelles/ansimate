@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{Command line utility to transform ANSI console output to html}
   gem.homepage      = "https://github.com/enriclluelles/ansimate"
 
-  gem.files         = `git ls-files`.split($\)
+  gem.files         = `git ls-files`.split($\) - ['.gitignore']
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.name          = "ansimate"
