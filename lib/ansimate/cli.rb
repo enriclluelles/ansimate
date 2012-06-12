@@ -2,16 +2,15 @@ require 'ansimate'
 
 module Ansimate
   class CLI
-    attr_accessor :effects, :fg_colors, :bg_colors
-    attr_accessor :default_effect, :default_fg, :default_bg
+    attr_accessor :fg_colors, :bg_colors
+    attr_accessor :default_fg, :default_bg
+    attr_writer :current_fg, :current_bg
+    attr_accessor :reversed, :bold, :underlined
 
     def initialize *args
       self.default_fg = 'white'
       self.default_bg = 'black'
-
-      self.effects = {
-
-      }
+      reset
 
       self.fg_colors = {
         30 => 'black',
@@ -38,29 +37,62 @@ module Ansimate
       }
     end
 
-    def decipher escape_codes, fg_color, bg_color, effects
-      escape_codes.to_s.split(";").map(&:to_i).each do |ansi_code|
-        fg_color = self.fg_colors[ansi_code] || fg_color
-        bg_color = self.bg_colors[ansi_code] || bg_color
+    def reset
+      self.current_fg = self.default_fg
+      self.current_bg = self.default_bg
+      self.bold = self.reversed = self.underlined = false
+    end
+
+    def decipher ansi_codes
+      ansi_codes.to_s.split(";").map(&:to_i).each do |ansi_code|
+        process_code(ansi_code)
       end
-      return fg_color, bg_color, effects
+    end
+
+    def current_fg
+      reversed ? @current_bg : @current_fg
+    end
+
+    def current_bg
+      reversed ? @current_fg : @current_bg
+    end
+
+    def process_code ansi_code
+      case ansi_code
+        when 0
+          reset
+        when 1
+          bold = true
+        when 4,24
+          self.underlined = ansi_code == 4
+        when 7,27
+          self.reversed = ansi_code == 7
+        else
+          @current_fg = self.fg_colors[ansi_code] || @current_fg
+          @current_bg = self.bg_colors[ansi_code] || @current_bg
+      end
+    end
+
+    def style_attributes
+      fx = []
+      fx << 'text-decoration: underline' if self.underlined
+      fx << 'font-weight: bold' if self.bold
+      fx << "color: #{self.current_fg}"
+      fx << "background-color: #{self.current_bg}"
+      fx.join(';')
     end
 
     def execute
-      effects = self.default_effect
-      fg_color = self.default_fg
-      bg_color = self.default_bg
-
       body_content = ''
 
       STDIN.readlines.each do |line|
         line.split("\e").each do |lp|
           lp.slice!(%r{(\[((\d+(;\d+)*))?m)})
-          fg_color, bg_color, effects =  self.default_fg, self.default_bg, self.default_effect if $1 && !$2
-          fg_color, bg_color, effects = decipher($3, fg_color, bg_color, effects) if $1 && $2
-          body_content << %{<span style="background-color:#{bg_color}; color: #{fg_color}">#{lp}</span>}
+          reset if $1 && !$2
+          decipher($3)
+          body_content << %{<span style="#{self.style_attributes}">#{lp.chomp}</span>}
         end
-        body_content << "<br />"
+        body_content << "<br/>"
       end
 
       html = <<-HTML
@@ -72,7 +104,7 @@ module Ansimate
             <title>output</title>
           </head>
           <body style="background-color: #{default_bg}; color: #{default_fg}; font-family: Monaco">
-              #{body_content}
+            #{body_content}
           </body>
         </html>
       HTML
