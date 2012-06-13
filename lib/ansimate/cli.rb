@@ -62,7 +62,7 @@ module Ansimate
         when 0
           reset
         when 1
-          bold = true
+          self.bold = true
         when 4,24
           self.underlined = ansi_code == 4
         when 7,27
