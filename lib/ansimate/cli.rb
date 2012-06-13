@@ -77,8 +77,8 @@ module Ansimate
       fx = []
       fx << 'text-decoration: underline' if self.underlined
       fx << 'font-weight: bold' if self.bold
-      fx << "color: #{self.current_fg}"
-      fx << "background-color: #{self.current_bg}"
+      fx << "color: #{self.current_fg}" if self.current_fg != self.default_fg
+      fx << "background-color: #{self.current_bg}" if self.current_bg != self.default_bg
       fx.join(';')
     end
 
@@ -90,9 +90,12 @@ module Ansimate
           lp.slice!(%r{(\[((\d+(;\d+)*))?m)})
           reset if $1 && !$2
           decipher($3)
-          body_content << %{<span style="#{self.style_attributes}">#{lp.chomp}</span>}
+          if self.style_attributes != ''
+            body_content << %{<span style="#{self.style_attributes}">#{lp}</span>}
+          else
+            body_content << lp
+          end
         end
-        body_content << "<br/>"
       end
 
       html = <<-HTML
