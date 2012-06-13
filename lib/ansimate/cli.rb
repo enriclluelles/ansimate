@@ -104,7 +104,7 @@ module Ansimate
             <title>output</title>
           </head>
           <body style="background-color: #{default_bg}; color: #{default_fg}; font-family: Monaco">
-            #{body_content}
+            <pre>#{body_content}</pre>
           </body>
         </html>
       HTML
